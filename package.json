@@ -1,0 +1,58 @@
+{
+  "name": "@softonic/axios-logger",
+  "version": "1.0.0",
+  "author": "Rubén Norte <ruben.norte@softonic.com>",
+  "description": "Axios plugin to log all requests and responses",
+  "license": "Apache-2.0",
+  "main": "index.js",
+  "homepage": "https://github.com/softonic/axios-logger",
+  "files": [
+    "es",
+    "lib",
+    "index.js"
+  ],
+  "scripts": {
+    "lint": "eslint es/**/*.js",
+    "pretest": "npm run lint",
+    "test": "npm run jest",
+    "tdd": "npm run jest -- --watch",
+    "jest": "jest --testPathPattern es/**/*",
+    "prebuild": "npm run test",
+    "build": "rm -rf lib && babel es -d lib --source-maps",
+    "prerelease": "npm run build",
+    "release": "npm version -m \"New version: %s\"",
+    "postrelease": "npm run push && npm publish",
+    "push": "git push origin master && git push origin --tags"
+  },
+  "dependencies": {
+    "@softonic/http-log-format": "^1.0.0",
+    "lodash": "^4.17.4"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.0",
+    "babel-preset-es2015": "^6.24.0",
+    "babel-preset-es2016": "^6.22.0",
+    "babel-preset-es2017": "^6.22.0",
+    "babel-register": "^6.24.0",
+    "eslint": "^3.17.1",
+    "eslint-config-airbnb-base": "^11.1.1",
+    "eslint-plugin-import": "^2.2.0",
+    "eslint-plugin-jest": "^19.0.1",
+    "hapi": "^16.1.0",
+    "jest": "^19.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/softonic/axios-logger.git"
+  },
+  "bugs": {
+    "url": "https://github.com/softonic/axios-logger/issues"
+  },
+  "babel": {
+    "presets": [
+      "es2015",
+      "es2016",
+      "es2017"
+    ]
+  }
+}
