@@ -1,6 +1,6 @@
 {
   "name": "@softonic/axios-logger",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "Rubén Norte <ruben.norte@softonic.com>",
   "description": "Axios plugin to log all requests and responses",
   "license": "Apache-2.0",
