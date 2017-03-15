@@ -14,9 +14,8 @@
   "scripts": {
     "lint": "eslint es/**/*.js",
     "pretest": "npm run lint",
-    "test": "npm run jest",
-    "tdd": "npm run jest -- --watch",
-    "jest": "jest --testPathPattern es/**/*",
+    "test": "jest",
+    "tdd": "jest --watch",
     "prebuild": "npm run test",
     "build": "rm -rf lib && babel es -d lib --source-maps",
     "prerelease": "npm run build",
@@ -53,6 +52,12 @@
       "es2015",
       "es2016",
       "es2017"
+    ]
+  },
+  "jest": {
+    "testPathIgnorePatterns": [
+      "<rootDir>/lib/",
+      "<rootDir>/node_modules/"
     ]
   }
 }
