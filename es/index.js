@@ -16,7 +16,6 @@ function filterHeaders({ headers, whitelistHeaders, blacklistHeaders }) {
 }
 
 /**
- * Returns an enhanced http.ClientRequest object (with timestamp) from the given Axios response
  * @param  {axios.Response} options.axiosResponse
  * @param  {string[]} [options.whitelistRequestHeaders]
  * @param  {string[]} [options.blacklistRequestHeaders]
@@ -41,25 +40,32 @@ function getLoggableRequestFromAxiosResponse({
 }
 
 /**
- * Returns an enhanced http.ClientRequest object created from the information in the given
- * Axios config
- * @param  {Object} config
+ * @param  {Object} options.axiosConfig
+ * @param  {string[]} [options.whitelistRequestHeaders]
+ * @param  {string[]} [options.blacklistRequestHeaders]
  * @return {http.ClientRequest}
  */
-function createClientRequestFromConfig(config) {
-  const { timestamp, headers } = config;
-  const parsedUrl = URL.parse(config.url);
+function getLoggableRequestFromAxiosConfig({
+  axiosConfig,
+  whitelistRequestHeaders,
+  blacklistRequestHeaders,
+}) {
+  const { timestamp, headers } = axiosConfig;
+  const parsedUrl = URL.parse(axiosConfig.url);
+  const allHeaders = Object.assign({ host: parsedUrl.host }, headers);
+
   return {
     timestamp,
-    method: config.method.toUpperCase(),
+    method: axiosConfig.method.toUpperCase(),
     url: parsedUrl.path,
-    headers: Object.assign({ host: parsedUrl.host }, headers),
+    headers: filterHeaders(allHeaders, {
+      whitelistHeaders: whitelistRequestHeaders,
+      blacklistHeaders: blacklistRequestHeaders,
+    }),
   };
 }
 
-/**
- * Returns an enhanced http response object (with timestamp and responseTime) from a given Axios
- * response
+/*
  * @param  {axios.Response} options.axiosResponse
  * @param  {string[]} [options.whitelistResponseHeaders]
  * @param  {string[]} [options.blacklistResponseHeaders]
@@ -149,15 +155,27 @@ export default function axiosBunyan(axios, {
   const logError = (error) => {
     let request;
     if (error.response) {
-      request = getLoggableRequestFromAxiosResponse(error.response);
+      request = getLoggableRequestFromAxiosResponse({
+        axiosResponse: error.response,
+        whitelistRequestHeaders,
+        blacklistRequestHeaders,
+      });
     } else if (error.config) {
-      request = createClientRequestFromConfig(error.config);
+      request = getLoggableRequestFromAxiosConfig({
+        axiosConfig: error.config,
+        whitelistRequestHeaders,
+        blacklistRequestHeaders,
+      });
     }
 
     const requestLine = request ? makeRequestLine(request) : 'Undefined client request';
 
     if (error.response) {
-      const response = getLoggableResponseFromAxiosResponse(error.response);
+      const response = getLoggableResponseFromAxiosResponse({
+        axiosResponse: error.response,
+        whitelistResponseHeaders,
+        blacklistResponseHeaders,
+      });
       logger.error({
         request,
         response,
