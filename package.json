@@ -24,7 +24,7 @@
     "push": "git push origin master && git push origin --tags"
   },
   "dependencies": {
-    "@softonic/http-log-format": "^1.0.0",
+    "@softonic/http-log-format": "^1.1.2",
     "lodash": "^4.17.4"
   },
   "devDependencies": {
