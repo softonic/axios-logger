@@ -1,19 +1,10 @@
 import URL from 'url';
-import { formatRequest, formatResponse } from '@softonic/http-log-format';
-import { pick, omit } from 'lodash';
-
-/**
- * Filters the given headers object picking the given whitelisted headers (if any) and removing
- * all blacklisted ones
- * @param  {Object.<string, string>} options.headers
- * @param  {string[]} [options.whitelistHeaders]
- * @param  {string[]} [options.blacklistHeaders]
- * @return {Object.<string, string>}
- */
-function filterHeaders({ headers, whitelistHeaders, blacklistHeaders }) {
-  const whitelistedHeaders = whitelistHeaders ? pick(headers, whitelistHeaders) : headers;
-  return omit(whitelistedHeaders, blacklistHeaders);
-}
+import {
+  formatRequest,
+  formatResponse,
+  stringifyRequest,
+  stringifyResponse,
+} from '@softonic/http-log-format';
 
 /**
  * @param  {axios.Response} options.axiosResponse
@@ -29,9 +20,7 @@ function getLoggableRequestFromAxiosResponse({
   const timestamp = axiosResponse.config.timestamp;
   const nativeRequest = Object.assign({ timestamp }, axiosResponse.request);
 
-  const loggableRequest = formatRequest(nativeRequest);
-  loggableRequest.headers = filterHeaders({
-    headers: loggableRequest.headers,
+  const loggableRequest = formatRequest(nativeRequest, {
     whitelistHeaders: whitelistRequestHeaders,
     blacklistHeaders: blacklistRequestHeaders,
   });
@@ -54,15 +43,19 @@ function getLoggableRequestFromAxiosConfig({
   const parsedUrl = URL.parse(axiosConfig.url);
   const allHeaders = Object.assign({ host: parsedUrl.host }, headers);
 
-  return {
+  const pseudoNativeRequest = {
     timestamp,
     method: axiosConfig.method.toUpperCase(),
     url: parsedUrl.path,
-    headers: filterHeaders(allHeaders, {
-      whitelistHeaders: whitelistRequestHeaders,
-      blacklistHeaders: blacklistRequestHeaders,
-    }),
+    headers: allHeaders,
   };
+
+  const loggableRequest = formatRequest(pseudoNativeRequest, {
+    whitelistHeaders: whitelistRequestHeaders,
+    blacklistHeaders: blacklistRequestHeaders,
+  });
+
+  return loggableRequest;
 }
 
 /*
@@ -86,29 +79,12 @@ function getLoggableResponseFromAxiosResponse({
     responseTime: now - new Date(requestTimestamp).getTime(),
   };
 
-  const loggableResponse = formatResponse(pseudoNativeResponse);
-  loggableResponse.headers = filterHeaders({
-    headers: loggableResponse.headers,
+  const loggableResponse = formatResponse(pseudoNativeResponse, {
     whitelistHeaders: whitelistResponseHeaders,
     blacklistHeaders: blacklistResponseHeaders,
   });
 
   return loggableResponse;
-}
-
-/**
- * Returns a string with some information from the given request
- * E.g.: 'GET example.com/test'
- * @param  {http.ClientRequest} request
- * @return {string}
- */
-function makeRequestLine(request) {
-  /* eslint-disable no-underscore-dangle */
-  const headers = request.headers || request._headers || {};
-  /* eslint-enable no-underscore-dangle */
-  const host = headers.host || '';
-  const url = request.url || request.path;
-  return `${request.method} ${host}${url}`;
 }
 
 /**
@@ -142,12 +118,13 @@ export default function axiosBunyan(axios, {
       whitelistResponseHeaders,
       blacklistResponseHeaders,
     });
-    const requestLine = makeRequestLine(request);
+
+    const message = `${stringifyRequest(request)} ${stringifyResponse(response)}`;
 
     logger.info({
       request,
       response,
-    }, `${requestLine} ${response.statusCode}`);
+    }, message);
 
     return axiosResponse;
   };
@@ -166,9 +143,9 @@ export default function axiosBunyan(axios, {
         whitelistRequestHeaders,
         blacklistRequestHeaders,
       });
+    } else {
+      request = { headers: {} };
     }
-
-    const requestLine = request ? makeRequestLine(request) : 'Undefined client request';
 
     if (error.response) {
       const response = getLoggableResponseFromAxiosResponse({
@@ -176,15 +153,17 @@ export default function axiosBunyan(axios, {
         whitelistResponseHeaders,
         blacklistResponseHeaders,
       });
+      const message = `${stringifyRequest(request)} ${stringifyResponse(response)}}`;
       logger.error({
         request,
         response,
-      }, `${requestLine} ${response.statusCode}`);
+      }, message);
     } else {
+      const message = `${stringifyRequest(request)} ERROR`;
       logger.error({
         request,
         error,
-      }, `${requestLine} ERROR`);
+      }, message);
     }
 
     return Promise.reject(error);
