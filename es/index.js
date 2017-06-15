@@ -5,9 +5,7 @@ import {
   stringifyRequest,
   stringifyResponse,
 } from '@softonic/http-log-format';
-import pkg from '../package.json';
-
-const namespace = pkg.name;
+import { name as namespace } from '../package.json';
 
 /**
  * @param  {axios.Response} options.axiosResponse
