@@ -5,6 +5,9 @@ import {
   stringifyRequest,
   stringifyResponse,
 } from '@softonic/http-log-format';
+import pkg from '../package.json';
+
+const namespace = pkg.name;
 
 /**
  * @param  {axios.Response} options.axiosResponse
@@ -17,8 +20,10 @@ function getLoggableRequestFromAxiosResponse({
   whitelistRequestHeaders,
   blacklistRequestHeaders,
 }) {
-  const timestamp = axiosResponse.config.timestamp;
-  const nativeRequest = Object.assign({ timestamp }, axiosResponse.request);
+  const { timestamp } = axiosResponse.config[namespace] || {};
+  const nativeRequest = Object.assign({
+    timestamp: new Date(timestamp).toISOString(),
+  }, axiosResponse.request);
 
   const loggableRequest = formatRequest(nativeRequest, {
     whitelistHeaders: whitelistRequestHeaders,
@@ -39,12 +44,13 @@ function getLoggableRequestFromAxiosConfig({
   whitelistRequestHeaders,
   blacklistRequestHeaders,
 }) {
-  const { timestamp, headers } = axiosConfig;
+  const { headers } = axiosConfig;
+  const { timestamp } = axiosConfig[namespace] || {};
   const parsedUrl = URL.parse(axiosConfig.url);
   const allHeaders = Object.assign({ host: parsedUrl.host }, headers);
 
   const pseudoNativeRequest = {
-    timestamp,
+    timestamp: new Date(timestamp).toISOString(),
     method: axiosConfig.method.toUpperCase(),
     url: parsedUrl.path,
     headers: allHeaders,
@@ -69,14 +75,14 @@ function getLoggableResponseFromAxiosResponse({
   whitelistResponseHeaders,
   blacklistResponseHeaders,
 }) {
-  const requestTimestamp = axiosResponse.config.timestamp;
+  const { timestamp: requestTimestamp } = axiosResponse.config[namespace] || {};
   const now = new Date();
 
   const pseudoNativeResponse = {
     timestamp: now.toISOString(),
     statusCode: axiosResponse.status,
     headers: axiosResponse.headers,
-    responseTime: now - new Date(requestTimestamp).getTime(),
+    responseTime: now - requestTimestamp,
   };
 
   const loggableResponse = formatResponse(pseudoNativeResponse, {
@@ -102,7 +108,7 @@ export default function axiosBunyan(axios, {
 }) {
   const logRequest = (config) => {
     // eslint-disable-next-line no-param-reassign
-    config.timestamp = new Date().toISOString();
+    config[namespace] = Object.assign({ timestamp: Date.now() }, config[namespace]);
     return config;
   };
 
