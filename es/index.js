@@ -34,6 +34,21 @@ function getLoggableRequestFromAxiosResponse({
 
 /**
  * @param  {Object} options.axiosConfig
+ * @param  {string} options.axiosConfig.url
+ * @param  {Object} [options.axiosConfig.params]
+ * @return {Object}
+ */
+function getParsedUrlFromAxiosConfig({ url, params }) {
+  let fullUrl = url;
+  if (params) {
+    const serializedParams = qs.stringify(params);
+    fullUrl += (url.indexOf('?') === -1 ? '?' : '&') + serializedParams;
+  }
+  return URL.parse(fullUrl);
+}
+
+/**
+ * @param  {Object} options.axiosConfig
  * @param  {string[]} [options.whitelistRequestHeaders]
  * @param  {string[]} [options.blacklistRequestHeaders]
  * @return {http.ClientRequest}
@@ -45,12 +60,7 @@ function getLoggableRequestFromAxiosConfig({
 }) {
   const { headers } = axiosConfig;
   const { timestamp } = axiosConfig[namespace] || {};
-  let url = axiosConfig.url;
-  if (axiosConfig.params) {
-    const serializedParams = qs.stringify(axiosConfig.params);
-    url += (url.indexOf('?') === -1 ? '?' : '&') + serializedParams;
-  }
-  const parsedUrl = URL.parse(url);
+  const parsedUrl = getParsedUrlFromAxiosConfig(axiosConfig);
   const allHeaders = Object.assign({ host: parsedUrl.host }, headers);
 
   const pseudoNativeRequest = {
