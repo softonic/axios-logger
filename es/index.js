@@ -1,4 +1,5 @@
 import URL from 'url';
+import qs from 'querystring';
 import {
   formatRequest,
   formatResponse,
@@ -44,7 +45,12 @@ function getLoggableRequestFromAxiosConfig({
 }) {
   const { headers } = axiosConfig;
   const { timestamp } = axiosConfig[namespace] || {};
-  const parsedUrl = URL.parse(axiosConfig.url);
+  let url = axiosConfig.url;
+  if (axiosConfig.params) {
+    const serializedParams = qs.stringify(axiosConfig.params);
+    url += (url.indexOf('?') === -1 ? '?' : '&') + serializedParams;
+  }
+  const parsedUrl = URL.parse(url);
   const allHeaders = Object.assign({ host: parsedUrl.host }, headers);
 
   const pseudoNativeRequest = {
