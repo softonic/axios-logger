@@ -20,9 +20,8 @@ function getLoggableRequestFromAxiosResponse({
   blacklistRequestHeaders,
 }) {
   const { timestamp } = axiosResponse.config[namespace] || {};
-  const nativeRequest = Object.assign({
-    timestamp: new Date(timestamp).toISOString(),
-  }, axiosResponse.request);
+  const nativeRequest = axiosResponse.request;
+  nativeRequest.timestamp = new Date(timestamp).toISOString();
 
   const loggableRequest = formatRequest(nativeRequest, {
     whitelistHeaders: whitelistRequestHeaders,
